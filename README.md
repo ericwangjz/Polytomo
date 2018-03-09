@@ -9,8 +9,10 @@ It consists of three modules:
 2. sampling
 3. polytomorun
 
-The `polyconfiregion` module consists of tools that contruct the polytope confidence region
-The `sampling` module draws confidence intervals from the polytope via sampling
+The `polyconfiregion` module consists of tools that contruct the polytope confidence region. 
+
+The `sampling` module draws confidence intervals from the polytope via sampling. 
+
 The `polytomorun` is the interface that reads all the input information, such as measurements POVM and respective counts, and outputs the figures of merit.
 
 Prerequisites
