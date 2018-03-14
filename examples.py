@@ -20,6 +20,8 @@ from parameters import *
 #Here we give some examples to demostrate how to use our method to yield confidence region and error bars in QST.
 
 
+
+
 '''
     
     # bell state QST example with data simulatde from single qubit sic2 measurements
@@ -131,10 +133,11 @@ data=np.array(data)
 
 
 
+
 #execution
 
 print 'constructing the polytope confidence region......'
-
+#print errorbar(eps,N,data,mmts,d)
 cr=polytopeCR(data,basis,mmts,N,d,eps,False)
 #onePOVM=False indicates we have a combinations of POVM's in the experiments, which in the GHZ4 example is 256 projective measurments. The default is True as in the bell pair example.
 
@@ -160,6 +163,5 @@ sample=sampling(d,mmts,data,N[0],4000) # sample from the polytope
 print'sampling done'
 
 print confidenceinterval(cr,sample,basis,ref,d,'fidelity','trdist') #output figure of merit
-
 
 

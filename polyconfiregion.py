@@ -1,5 +1,4 @@
-import logging
-logging.basicConfig()
+
 import itertools 
 import numpy as np
 import qutip.states
@@ -8,7 +7,8 @@ import polytope.polytope as pc
 import matplotlib.pyplot as plt
 from qutip import *
 from scipy.special import erfinv
-
+import math
+from scipy.optimize import brentq
 
 def state2r(rho,basis,d):
     r=[]
@@ -43,7 +43,8 @@ def mmtrep(basis,mmt,d):
     for i in mmt:
         r=[]
         for j in basis:
-            r.append(((d/(2*np.trace(i)))/np.sqrt(d*(d-1)/2.))*np.trace(i*j))
+            traceprod=np.trace(np.matrix(j)*np.matrix(i))
+            r.append(((d/(2*np.trace(i)))/np.sqrt(d*(d-1)/2.))*traceprod)
         mmtrep.append(np.array(r))
     return mmtrep
 #define general su(d) basis:
@@ -82,32 +83,50 @@ def allmmts(mmt,n,nested=True):
 def probit(eps):
     return -np.sqrt(2)*erfinv(eps-1.)
 
-def errorbar(eps,N,data,mmts,d):
+def errorbar(eps,N,data,mmts,d,method='CP'):
+    assert len(data)==len(mmts) #sanity check
+    l=len(data)
     upperrorbars=[]
     lowerrorbars=[]
     uper=[]
     lwer=[]
-    z=probit(eps)
-    assert len(data)==len(mmts) #sanity check
-    l=len(data)
-    for i in data:
-            p=(i*N+z**2/2.)/(N+z**2)
-            uper.append(p-i+z*np.sqrt(p*(1.-p)/(N+z**2)))
-            lwer.append(p-i-z*np.sqrt(p*(1.-p)/(N+z**2)))
-    for i in range(l):  
-            upperrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*(data[i]+uper[i])-1.)/(d-1.))
-            lowerrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*(data[i]+lwer[i])-1.)/(-d+1.))
+    if method=='AC':
+        z=probit(eps)
+        for i in data:
+                p=(i*N+z**2/2.)/(N+z**2)
+                offset=z*np.sqrt(p*(1.-p)/(N+z**2))
+                if offset+p<1.:
+                    uper.append(offset+p-i)
+                else:
+                    uper.append(1.-i)
+                if p-offset>0.:
+                    lwer.append(p-i-offset)
+                else:
+                    lwer.append(-i)
+    if method=='CP':
+        for i in data:
+            if i!=0. and i!=1.:
+                f=lambda x:i*math.log(i/(i+x))+(1.-i)*math.log((1.-i)/(1.-i-x))-math.log(2.*l/eps)/N
+                a=brentq(f,2e-15,1.-i-2e-15)
+                uper.append(a)#(m*d*(i+a[0])-1.)/(d-1.))
+                b=brentq(f,-i+2e-15,-2e-15)
+                lwer.append(b)#(m*d*(i+b[0])-1.)/(1.-d))
+            if i==0.:
+                g=lambda x:math.log(1/(1.-x))-math.log(2.*l/eps)/N
+                a=brentq(g,2e-15,1.-i-2e-15)
+                uper.append(a)
+                lwer.append(0.)
+            elif i==1.:
+                h=lambda x:math.log(1/(1.+x))-math.log(2.*l/eps)/N
+                a=brentq(h,-i+2e-15,-2e-15)
+                uper.append(0.)
+                lwer.append(a)
+    for i in range(l):
+        physicalupperbound=min(data[i]+uper[i],max(np.linalg.eig(mmts[i])[0].real)) #enforce physicality
+        upperrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*physicalupperbound-1.)/(d-1.))
+        lowerrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*(data[i]+lwer[i])-1.)/(-d+1.))
     return  np.append(upperrorbars,lowerrorbars)#np.array(upperrorbars)
 
-
-
-def errorbar_cp(eps,n,upper,lower,data,mmts,d):
-    upperrorbars=[]
-    lowerrorbars=[]
-    for i in range(len(data)):
-            upperrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*(data[i]+upper[i])-1.)/(d-1.))
-            lowerrorbars.append((d/(np.trace(mmts[i]).astype(np.double))*(data[i]+lower[i])-1.)/(-d+1.))
-    return np.append(upperrorbars,lowerrorbars)
 
 
 def singlepolytopeCR(errorbars,basis,mmt,d,eps):
@@ -126,16 +145,17 @@ def polytomerge(polytopes):
         mergedb = np.hstack([mergedb, i[0].b])
     return pc.Polytope(mergedA, mergedb),eps
 
-def polytopeCR(data,basis,mmts,N,d,eps,onePOVM=True):
+def polytopeCR(data,basis,mmts,N,d,eps,onePOVM=True,interval='CP'):
+    method=interval
     if onePOVM == True:
-        errorbars=errorbar(eps,N,data,mmts,d)
+        errorbars=errorbar(eps,N,data,mmts,d,method)
         polyto,error=singlepolytopeCR(errorbars,basis,mmts,d,eps)
     else:
         polytopes=[]
         assert len(data)==len(mmts) #sanity check
         l=len(data)
         for i in range(l):
-            errorbars=errorbar(eps/l,N[i],data[i],mmts[i],d)
+            errorbars=errorbar(eps/l,N[i],data[i],mmts[i],d,method)
             polytopes.append(singlepolytopeCR(errorbars,basis,mmts[i],d,eps/l))
         polyto,error=polytomerge(polytopes)
     return polyto
