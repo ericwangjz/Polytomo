@@ -159,6 +159,7 @@ print mlestate
 
 
 #draw confidence intervals w.r.t. certain figure of merit from the polytope confidence region.
+
 sample=sampling(d,mmts,data,N[0],4000) # sample from the polytope
 print'sampling done'
 

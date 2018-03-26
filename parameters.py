@@ -15,15 +15,15 @@ GellMann3=[np.matrix('1. 0 0; 0 1. 0;0 0 1.')*np.sqrt(2/3.),np.matrix('0 1. 0; 1
 
 #measurements
 #single qubit Pauli mmt (MUB-POVM)
-mub = [ [
+mub = [
          np.array([[.5, .5],[.5, .5]])/3,     # X, +1 outcome
          np.array([[.5, -.5],[-.5, .5]])/3,   # X, -1 outcome
-         ],[
+         
             np.array([[.5, -.5j],[.5j, .5]])/3,  # Y, +1 outcome
             np.array([[.5, .5j],[-.5j, .5]])/3,  # Y, -1 outcome
-            ],[
+    
                np.array([[1.,0],[0,0]])/3,          # Z, +1 outcome
-               np.array([[0,0],[0,1.]])/3,  ]       # Z, -1 outcome
+               np.array([[0,0],[0,1.]])/3,         # Z, -1 outcome
        ]
 
 

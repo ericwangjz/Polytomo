@@ -22,13 +22,13 @@ def mle(data,N,mmts,d,iterations=10000):
     (rho_MLE, dd) = tomographer.tools.densedm.mle.find_mle(llh, solver_opts={'max_iters':k})
     return rho_MLE
 
-def store_sample_figofmerit(T):
-    samples.append(T)
-    return 0
-samples=[]
+
 def sampling(d,mmts,data,N,samplesize=2000):
     #r = None # global variable
-
+    samples=[]
+    def store_sample_figofmerit(T):
+        samples.append(T)
+        return 0
     with tomographer.jpyutil.RandWalkProgressBar() as prg:
         r = tomographer.tomorun.tomorun(
                                     # the dimension of the quantum system
@@ -37,7 +37,7 @@ def sampling(d,mmts,data,N,samplesize=2000):
                                     Emn=mmts,
                                     Nm=data*N,
                                     # Random Walk parameters: step size, sweep size, number of thermalization sweeps, number of live sweeps
-                                    mhrw_params=tomographer.MHRWParams(0.01,100,500,samplesize),
+                                    mhrw_params=tomographer.MHRWParams(0.01,100,2000,samplesize),
                                      fig_of_merit=store_sample_figofmerit,rng_base_seed=None,
                                     progress_fn=prg.progress_fn
                                     )
